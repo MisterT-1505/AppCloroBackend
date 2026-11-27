@@ -112,7 +112,29 @@ Usuarios semilla sugeridos:
 > contraseñas en texto plano. Si se usa texto plano, dejarlo documentado en el
 > README y no reutilizar esas claves fuera del proyecto.
 
-## 4. Tareas de Javier
+## 4. Handoff de Benjamin (lo que ya está listo en la app)
+
+- La app ya tiene Retrofit, OkHttp y Gson configurados.
+- En `App/app/build.gradle.kts` existen dos URLs:
+  - `API_MEDICIONES_BASE_URL` -> `http://<API_HOST>:8081/`
+  - `API_OPERACIONES_BASE_URL` -> `http://<API_HOST>:8082/`
+- El host se cambia en `App/local.properties` con `API_HOST`:
+  `10.0.2.2` para emulador o la IP LAN para celular físico.
+- `RetrofitClient` (`data/remote/RetrofitClient.kt`) ya expone
+  `medicionesApi`. Para operaciones, agrega `operacionesApi` con
+  `BuildConfig.API_OPERACIONES_BASE_URL`.
+- El login actual está en
+  `ui/viewmodel/AuthViewModel.kt` con usuarios de ejemplo. Javier debe
+  reemplazar `usuariosFicticios` por una llamada a `POST /api/auth/login`
+  y mantener el guardado de sesión con `PreferenciasRepository`.
+- La app espera que el login devuelva exactamente:
+  `{ id, nombre, correo, rol, granjaAsignada }`, con `rol` en
+  `OPERARIO`, `SUPERVISOR` o `JEFATURA`.
+- Alertas y acciones correctivas hoy se guardan en Room. Javier debe
+  reemplazar `AlertasViewModel` y `RegistroAccionViewModel` para usar la
+  API, dejando Room como caché.
+
+## 5. Tareas de Javier
 
 - [ ] Crear el proyecto Spring Boot.
 - [ ] Entidades + repositorios.
@@ -126,7 +148,7 @@ Usuarios semilla sugeridos:
 - [ ] Pruebas de ViewModels/Repositorios de la app (MockK + coroutines-test).
 - [ ] README y evidencias de Trello.
 
-## 5. Probar
+## 6. Probar
 
 ```bash
 cd ms-operaciones

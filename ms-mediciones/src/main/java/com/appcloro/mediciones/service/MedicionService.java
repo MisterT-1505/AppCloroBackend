@@ -24,20 +24,24 @@ public class MedicionService {
 
     private final MedicionRepository medicionRepository;
     private final PuntoMedicionRepository puntoRepository;
+    private final CatalogoService catalogoService;
 
     public MedicionService(MedicionRepository medicionRepository,
-                           PuntoMedicionRepository puntoRepository) {
+                           PuntoMedicionRepository puntoRepository,
+                           CatalogoService catalogoService) {
         this.medicionRepository = medicionRepository;
         this.puntoRepository = puntoRepository;
+        this.catalogoService = catalogoService;
     }
 
     public List<MedicionDto> listar(String granja, String puntoId) {
+        String granjaNombre = catalogoService.nombreDeGranja(granja);
         List<Medicion> mediciones;
 
-        if (textoConValor(granja) && textoConValor(puntoId)) {
-            mediciones = medicionRepository.findByGranjaAndPuntoIdOrderByFechaHoraDesc(granja, puntoId);
-        } else if (textoConValor(granja)) {
-            mediciones = medicionRepository.findByGranjaOrderByFechaHoraDesc(granja);
+        if (textoConValor(granjaNombre) && textoConValor(puntoId)) {
+            mediciones = medicionRepository.findByGranjaAndPuntoIdOrderByFechaHoraDesc(granjaNombre, puntoId);
+        } else if (textoConValor(granjaNombre)) {
+            mediciones = medicionRepository.findByGranjaOrderByFechaHoraDesc(granjaNombre);
         } else if (textoConValor(puntoId)) {
             mediciones = medicionRepository.findByPuntoIdOrderByFechaHoraDesc(puntoId);
         } else {
@@ -49,15 +53,18 @@ public class MedicionService {
                 .toList();
     }
 
+    /**
+     * Última medición por punto. Se calcula sobre el historial ordenado por
+     * fecha para que un registro antiguo insertado después no pise al real.
+     */
     public List<MedicionDto> ultimas(String granja) {
-        if (textoConValor(granja)) {
-            return medicionRepository.findUltimasPorGranja(granja).stream()
-                    .map(MedicionDto::from)
-                    .toList();
-        }
+        String granjaNombre = catalogoService.nombreDeGranja(granja);
+        List<Medicion> base = textoConValor(granjaNombre)
+                ? medicionRepository.findByGranjaOrderByFechaHoraDesc(granjaNombre)
+                : medicionRepository.findAllByOrderByFechaHoraDesc();
 
         Map<String, Medicion> ultimasPorPunto = new LinkedHashMap<>();
-        for (Medicion medicion : medicionRepository.findAllByOrderByFechaHoraDesc()) {
+        for (Medicion medicion : base) {
             ultimasPorPunto.putIfAbsent(medicion.getPuntoId(), medicion);
         }
 
@@ -139,7 +146,7 @@ public class MedicionService {
 
     @Transactional
     public List<MedicionDto> simular(String granja) {
-        List<PuntoMedicion> puntos = puntoRepository.findByGranjaIdOrderByGalponAsc(granja);
+        List<PuntoMedicion> puntos = catalogoService.puntosDeGranja(granja);
 
         if (puntos.isEmpty()) {
             throw new RecursoNoEncontradoException(
